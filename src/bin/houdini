@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+#
+# Houdini bash micro-framework: https://github.com/jairocgr/houdini
+#
+# This is the front-end hub file responsible for receiving and dispatch the
+# command line calls to their targets scripts
+#
+
+# Exit immediately if something returns a non-zero status
+set -o errexit
+
+# If set, the return value of a pipeline is the value of the last (rightmost)
+# command to exit with a non-zero status, or zero if all commands in the
+# pipeline exit successfully. This option is disabled by default.
+set -o pipefail
+
+# Exit your script if you try to use an uninitialised variable
+set -o nounset
+
+# Real path to the houdini hub file
+export H_BIN="$(realpath ${BASH_SOURCE[0]})"
+
+# The hub filename
+export H_FILE="$(basename $H_BIN)"
+
+# The command identifier (the hub filename without any file extensions)
+export H_ID=${H_FILE%.*}
+
+# The houdini repository root (in this case, the father of the hub file directory)
+export H_PROJECT_ROOT="$(realpath $(dirname $H_BIN)/../)"
+
+# The hub file path relative to the project root
+export H_RELATIVE_BIN=${H_BIN//"$H_PROJECT_ROOT/"}
+
+# The directory where the houdini assets are deployed. This is where all the
+# libraries, spells and actions are placed
+export H_DIR="$H_PROJECT_ROOT/lib/houdini"
+
+# The library directory
+export H_LIB_DIR="$H_DIR/lib"
+
+# The spell directory
+export H_SPELL_DIR="$H_DIR/spell"
+
+# The id of the current houdini running
+export H_RUNNING_ID="$( date +%s | sha256sum | base64 | head -c 16 )"
+
+# Directory to place temporary assets and files
+export H_TMP_DIR="$(dirname $(mktemp --dry-run))/.$H_ID.$H_RUNNING_ID"
+
+# Persistent storage to all-propourse assets and files
+export H_WORKBENCH_DIR="$H_PROJECT_ROOT/.$H_ID"
+
+# If true, will print even tracer prints
+export H_VERBOSE="${H_VERBOSE:-false}"
+
+# To silence all prints
+export H_QUIET="${H_QUIET:-false}"
+
+# Store all parameters received by the hud script
+export H_ARGS=("$@")
+
+# The finish trap for clean-up actions
+function h_finish {
+  rm -rf $H_TMP_DIR || true
+}
+
+trap h_finish EXIT
+
+# Ensure that the working directories are created and writeable
+mkdir -p $H_TMP_DIR && chmod 755 $H_TMP_DIR
+mkdir -p $H_WORKBENCH_DIR && chmod 755 $H_WORKBENCH_DIR
+
+# Conveniently, change the current directory to the project root
+cd $H_PROJECT_ROOT
+
+#!include core
+
+# Include all user defined libraries
+if [[ -d $H_LIB_DIR ]]; then
+  for lib in $(find $H_LIB_DIR -name '*.sh'); do
+    source $lib
+  done
+fi
+
+# Cast the spell responsible for dealing with the received command
+cast ${@}
