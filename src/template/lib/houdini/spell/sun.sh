@@ -26,7 +26,7 @@ function hello {
 #     *example.2.ronn* is served as */example.2.html*. There's also an index page
 #     at the root with links to each <file>.
 #
-function __sun_ps {
+function __ps {
   putz ""
   putz "Process table from <b>$HOSTNAME</b>/${1:-no_arg}"
   putz ""
@@ -37,4 +37,21 @@ function __sun_ps {
 function ptable {
   cast sun ps
   cast sun dump list
+}
+
+#
+# Mostra a table de processos do *host* atual
+#
+# USAGE
+#   bash $H_RELATIVE_BIN sun ps
+#
+# OPTIONS
+#  These options control whether output is written to file(s), standard output,
+#  or directly to a man pager.
+#
+#   * -m, --man:
+#     Don't generate files, display <file>s as if man(1) were invoked on the roff
+#
+function default {
+  puts "statements <b>${@}</>"
 }

@@ -11,3 +11,9 @@ function command_exists {
 function indent {
   sed 's/^/  /'
 }
+
+function join_by {
+  local IFS="$1"
+  shift
+  echo -n "$*"
+}

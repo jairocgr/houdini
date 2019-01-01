@@ -58,8 +58,8 @@ function __cleanup {
 
 trap __cleanup EXIT
 
-function verbose {
-  [[ "$H_VERBOSE" == "true" ]]
+function debug_mode {
+  [[ "$H_DEBUG" == "true" ]]
 }
 
 function die {

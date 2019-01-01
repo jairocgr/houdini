@@ -17,6 +17,13 @@ function confirm {
   esac
 }
 
+function error {
+  puts ""
+  puts " <err>ERROR:</> ${@}"
+  puts ""
+  exit 1
+}
+
 function putz {
   puts " ${@}"
 }
@@ -91,7 +98,7 @@ function bold {
 }
 
 function trace {
-  if verbose; then
+  if debug_mode; then
     puts "<gray>$1</>"
   fi
 }

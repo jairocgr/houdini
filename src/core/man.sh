@@ -4,7 +4,7 @@ function is_a_help_call {
   if [[ ${#BASH_ARGV[@]} -gt 0 ]]; then
     for arg in "${BASH_ARGV[@]}"
     do
-      if [[ $arg = "--help" ]] || [[ $arg = "-h" ]] ; then
+      if [[ $arg = "--man" ]] ; then
         return 0
       fi
     done
@@ -67,9 +67,9 @@ function show_man {
   spell="$1"
   action="$2"
 
-  file="$(spell_file_path $spell)"
-
   if [[ $action == "default" ]]; then
+
+    file="$(spell_file_path $spell)"
 
     # print the head comment
     while read line; do
@@ -83,11 +83,12 @@ function show_man {
     done <<<$( cat $file )
 
     # list all actions
+    echo ""
     echo " ALL ACTIONS" | manfmt
 
-    regex="$(spell_actions_regex $action $spell)"
+    regex="$(action_name_regex $spell)"
 
-    for act in $( cat $file | sed -nr "s/$regex/\4/gp" ); do
+    for act in $( cat $file | sed -nr "s/$regex/\5/gp" ); do
       # echo "-> get_action_description $spell $action"
       # get_action_description $spell $act
       # die "man"
@@ -107,10 +108,29 @@ function show_man {
     done
 
     echo ""
+
+    if existing_action $spell $action; then
+      local man="$(get_action_documentation $spell $action)"
+
+      if ! [[ -z "$man" ]]; then
+        echo -e "$man"
+        echo ""
+      fi
+    fi
+
+    exit 0
   fi
 
 
-  if  existing_action $1 $2; then
-    echo -e "$(get_action_documentation $spell $action)"
+  if existing_action $1 $2; then
+    local man="$(get_action_documentation $spell $action)"
+
+    if [[ -z "$man" ]]; then
+      error "Action <b>$action</> does not have documentation"
+    else
+      echo -e "$man\n"
+    fi
   fi
+
+  exit 0
 }

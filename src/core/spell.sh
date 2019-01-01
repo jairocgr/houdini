@@ -8,10 +8,6 @@ function existing_spell {
   [[ -f "$(spell_file_path $1)" ]]
 }
 
-function existing_spell_file {
-  [[ -f "$(spell_file_path ${@})" ]]
-}
-
 function action_function_name {
   regex=$(action_fn_regex ${@})
   cat $(spell_file_path $1) \
@@ -20,39 +16,119 @@ function action_function_name {
 }
 
 function action_fn_regex {
-  printf "^function +((__${1/\//_}_)|(__)?$2) *(\( *\))?.*$"
+  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?$2) *(\( *\))?.*$"
 }
 
-function spell_actions_regex {
-  printf "^function +((__${1/\//_}_)|(__)?([a-zA-Z0-9\.\_]+)) *(\( *\))?.*$"
-}
-
-function existing_action_function {
-
-  if ! existing_spell_file $1; then
-    return 1
-  fi
-
-  cat $(spell_file_path $1) | grep -E "$(action_fn_regex ${@})" > /dev/null 2>&1
-
-  return $?
+function action_name_regex {
+  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?([a-zA-Z0-9\_]+)) *(\( *\))?.*$"
 }
 
 function existing_action {
-  if existing_spell $1; then
-    if existing_action_function ${@}; then
-      return 0
-    else
-      return 1
-    fi
-  fi
+  cat $(spell_file_path $1) | grep -E "$(action_fn_regex ${@})" >/dev/null 2>&1
 }
 
 function cast {
 
   local DEFAULT_SPELL="$H_ID"
   local DEFAULT_ACTION="default"
-  local args="${@}"
+
+  local args=("${@}")
+  local nargs="${#args[@]}"
+
+  founded_spell=""
+
+  for ((i=${#args[@]}; i>0; i--)); do
+    pieces=("${args[@]:0:$i}")
+    candidate=$(join_by / ${pieces[@]})
+
+    if existing_spell $candidate; then
+      founded_spell="$candidate"
+      founded_index="$i"
+      break
+    fi
+  done
+
+  errmsg=""
+  spell=""
+  action=""
+
+  if [[ "$founded_spell" != "" ]]; then
+    spell="$founded_spell"
+
+    canditate_index="$(( $founded_index + 1 ))"
+    candidate="${!canditate_index:-}"
+
+    if [[ "$candidate" != "" ]]; then
+      if existing_action $spell $candidate; then
+        action="$candidate"
+        args_index="$(( $founded_index + 1 ))"
+        args="${args[@]:$args_index}"
+      elif existing_action $spell $DEFAULT_ACTION; then
+        action="$DEFAULT_ACTION"
+        args_index="$(( $founded_index ))"
+        args="${args[@]:$args_index}"
+      else
+        errmsg="Action <b>$candidate</> not found on spell <b>$spell</>"
+      fi
+    else
+      if existing_action $spell $DEFAULT_ACTION; then
+        action="$DEFAULT_ACTION"
+        args=""
+      else
+        errmsg="Action <b>$DEFAULT_ACTION</> not found on spell <b>$spell</>"
+      fi
+    fi
+  else # does not found any spell
+    if existing_spell $DEFAULT_SPELL; then
+      spell="$DEFAULT_SPELL"
+
+      candidate_action="${args[0]:-}"
+
+      if [[ $candidate_action != "" ]]; then
+        if existing_action $spell $candidate_action; then
+          action="$candidate_action"
+          args="${args[@]:1}"
+        elif existing_action $spell $DEFAULT_ACTION; then
+          action="$DEFAULT_ACTION"
+          args="${args[@]:0}"
+        else
+          errmsg="Action <b>$candidate_action</> not found on <b>$spell</> spell"
+        fi
+      else
+        if existing_action $spell $DEFAULT_ACTION; then
+          action="$DEFAULT_ACTION"
+          args=""
+        else
+          errmsg="Action <b>$DEFAULT_ACTION</> not found on default <b>$spell</> spell"
+        fi
+      fi
+    else # does not have defaul spell
+      if [[ -z "${args[0]:-}" ]]; then
+        errmsg="Default spell <b>$DEFAULT_SPELL</> not found"
+      else
+        errmsg="Spell <b>${args[0]}</> not found"
+      fi
+    fi
+  fi
+
+  # If call with -h or --help, show the documentation
+  if is_a_help_call; then
+    spell="${spell:-$DEFAULT_SPELL}"
+    action="${action:-$DEFAULT_ACTION}"
+    show_man $spell $action
+  fi
+
+  if ! [[ -z "${errmsg:-}" ]]; then
+    error "$errmsg"
+  fi
+
+  ( source $(spell_file_path $spell) ; $(action_function_name $spell $action) $args )
+
+  return $?
+
+  ###############################
+
+  die "$(implode / ${args[@]}).sh $nargs"
 
   founded_spell=""
   founded_index=1
@@ -68,6 +144,8 @@ function cast {
     if existing_spell "$candidate"; then
       founded_spell="$candidate"
       founded_index="$i"
+    elif [[ -d $H_SPELL_DIR/$candidate ]]; then
+      continue;
     else
       break;
     fi
@@ -75,35 +153,43 @@ function cast {
     ((i++))
   done
 
+  die "$founded_spell / $founded_index"
+
   if [[ $founded_spell != "" ]]; then
 
-    action_index="$( expr $founded_index + 1 )"
-
     spell="$founded_spell"
-    action="${!action_index:-}"
 
-    if existing_action $spell $action; then
-      args_index="$(( $founded_index + 2 ))"
+    canditate_index="$( expr $founded_index + 1 )"
+    candidate="${!canditate_index:-}"
+
+    if ! [[ -z "$candidate" ]] && existing_action $spell $candidate; then
+      action="$candidate"
+      args_index="$(( $canditate_index + 1 ))"
+      args="${@:$args_index}"
+    elif existing_action $spell $DEFAULT_ACTION; then
+      action="$DEFAULT_ACTION"
+      args_index="$canditate_index"
       args="${@:$args_index}"
     else
-      action="$DEFAULT_ACTION"
-      args_index="$action_index"
-      args="${@:$args_index}"
+      errmsg="Action \"<b>${candidate:-$DEFAULT_ACTION}</>\" not found on spell \"<b>$spell</>\""
     fi
 
   else
     spell="$DEFAULT_SPELL"
-    action="${1:-$DEFAULT_ACTION}"
+    candidate="${1:-}"
 
-    if existing_action $spell $action; then
+    if ! [[ -z "$candidate" ]] && existing_action $spell $candidate; then
+      action="$candidate"
       args="${@:2}"
-    else
+    elif existing_action $spell $DEFAULT_ACTION; then
       action="$DEFAULT_ACTION"
       args="${@:1}"
+    else
+      fail "Action \"<b>$action</>\" not found on spell \"<b>$spell</>\""
     fi
   fi
 
-  trace "calling $spell->$action('$args')"
+  trace "calling $spell->$action('${args:-<ZERO_ARGS>}')"
 
   # If call with -h or --help, show the documentation
   if is_a_help_call; then
@@ -111,10 +197,7 @@ function cast {
   fi
 
   if ! existing_action $spell $action; then
-    puts ""
-    puts " <err>ERROR:</> Action \"<b>$action</>\" not found on spell \"<b>$spell</>\""
-    puts ""
-    exit 1
+    fail "Action \"<b>$action</>\" not found on spell \"<b>$spell</>\""
   fi
 
   ( source $(spell_file_path $spell) ; $(action_function_name $spell $action) $args )
