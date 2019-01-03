@@ -16,11 +16,11 @@ function action_function_name {
 }
 
 function action_fn_regex {
-  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?$2) *(\( *\))?.*$"
+  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?$2) +(\( *\))?.*$"
 }
 
 function action_name_regex {
-  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?([a-zA-Z0-9\_]+)) *(\( *\))?.*$"
+  printf "^function +(((__$( echo $1 | tr '/' '_' )_)|(__))?([a-zA-Z0-9\_]+)) +(\( *\))?.*$"
 }
 
 function existing_action {
@@ -116,6 +116,10 @@ function cast {
     spell="${spell:-$DEFAULT_SPELL}"
     action="${action:-$DEFAULT_ACTION}"
     show_man $spell $action
+  fi
+
+  if is_a_list_all_call; then
+    show_list_all
   fi
 
   if ! [[ -z "${errmsg:-}" ]]; then

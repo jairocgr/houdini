@@ -45,6 +45,12 @@ function puts {
     | sed -r 's/<gray>/\\e[90m/g' \
     | sed -r 's/<\/gray>/\\033[0m/g' \
     \
+    | sed -r 's/<fade>/\\e[90m/g' \
+    | sed -r 's/<\/fade>/\\033[0m/g' \
+    \
+    | sed -r 's/<bfade>/\\e[1;90m/g' \
+    | sed -r 's/<\/bfade>/\\033[0m/g' \
+    \
     | sed -r 's/<bgray>/\\e[1;90m/g' \
     | sed -r 's/<\/bgray>/\\033[0m/g' \
     \
@@ -95,6 +101,10 @@ function fail {
 
 function bold {
   puts "<b>$1</b>"
+}
+
+function fade {
+  puts "<fade>$1</>"
 }
 
 function trace {
