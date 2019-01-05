@@ -2,3 +2,6 @@ out
 tmp
 local
 dist
+
+.env
+.houdini

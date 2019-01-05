@@ -24,11 +24,10 @@ function __testt {
 }
 
 #
+# Baixa e restaura dump
+#
 # USAGE
 #   bash bin/syscor dump pull <dump> [dbname]
-#
-# DESCRIPTION
-#   Baixa e restaura dump
 #
 # ARGS
 #   dump    Nome do dump a ser baixado e restaurado.

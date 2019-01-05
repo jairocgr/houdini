@@ -74,14 +74,19 @@ mkdir -p $H_WORKBENCH_DIR && chmod 755 $H_WORKBENCH_DIR
 # Conveniently, change the current directory to the project root
 cd $H_PROJECT_ROOT
 
-#!include core
+function include_dir {
+  if [[ -d $1 ]]; then
+    for lib in $(find $1 -name '*.sh'); do
+      source $lib
+    done
+  fi
+}
+
+# Include core libs
+include_dir core
 
 # Include all user defined libraries
-if [[ -d $H_LIB_DIR ]]; then
-  for lib in $(find $H_LIB_DIR -name '*.sh'); do
-    source $lib
-  done
-fi
+include_dir $H_LIB_DIR
 
 # Cast the spell responsible for dealing with the received command
 cast ${@}

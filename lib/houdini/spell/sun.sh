@@ -55,3 +55,16 @@ function ptable {
 function default {
   puts "statements <b>${@}</>"
 }
+
+#
+# Run token server
+#
+function serve {
+  putz ""
+  putz "server test <b>$HOSTNAME:3000</>"
+  while true; do
+    putz " serving token $(openssl rand -base64 16 2> /dev/null)"
+    sleep 5
+  done
+  putz ""
+}
