@@ -28,7 +28,6 @@ function is_a_list_all_call {
 
 function manfmt {
   echo -e "$( cat - \
-    | envsubst \
     | sed -E '/^\#\!\/.*/d' \
     | sed -E 's/<\/>/\\033[0m/g' \
     | sed -E 's/<\/b>/\\033[0m/g' \

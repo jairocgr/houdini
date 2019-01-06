@@ -17,3 +17,7 @@ function join_by {
   shift
   echo -n "$*"
 }
+
+function not_empty {
+  [[ ! -z "${@:-}" ]]
+}

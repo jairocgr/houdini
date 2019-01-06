@@ -149,7 +149,7 @@ function cast {
     error "$errmsg"
   fi
 
-  if daemonize_call ${@}; then
+  if is_daemonize_call ${@}; then
     castd "$(echo $spell/$action | tr '/' '_')" ${@}
     return $?
   else
