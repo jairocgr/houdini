@@ -33,6 +33,9 @@ function puts {
     | sed -r 's/<red>/\\e[31m/g' \
     | sed -r 's/<\/red>/\\033[0m/g' \
     \
+    | sed -r 's/<bred>/\\e[1;31m/g' \
+    | sed -r 's/<\/bred>/\\033[0m/g' \
+    \
     | sed -r 's/<magenta>/\\e[35m/g' \
     | sed -r 's/<\/magenta>/\\033[0m/g' \
     \

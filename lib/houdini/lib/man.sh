@@ -13,19 +13,6 @@ function is_a_help_call {
   return 1
 }
 
-function is_a_list_all_call {
-  if [[ ${#BASH_ARGV[@]} -gt 0 ]]; then
-    for arg in "${BASH_ARGV[@]}"
-    do
-      if [[ $arg = "--list-all" ]] ; then
-        return 0
-      fi
-    done
-  fi
-
-  return 1
-}
-
 function manfmt {
   echo -e "$( cat - \
     | sed -E '/^\#\!\/.*/d' \
@@ -77,19 +64,47 @@ function get_action_description {
   done <<<$( get_action_documentation ${@} )
 }
 
-function show_list_all {
-  puts ""
-  for file in $( find $H_SPELL_DIR | grep .sh | sort ) ; do
+function has_other_spells {
+  for file in $( find $H_SPELL_DIR | grep -E ".+\.sh" | sort ) ; do
     local spell=${file#$H_SPELL_DIR/}
     local spell=${spell%.sh}
 
     if [[ $spell == $H_ID ]]; then
-      local default=" (default)"
-    else
-      local default=""
+      # If is default spell, don't count
+      continue
     fi
 
-    puts " bash $H_RELATIVE_BIN <b>$spell</><fade>$default</>"
+    return 0
+  done
+  return 1
+}
+
+function show_list_all {
+  puts ""
+
+  if existing_spell $H_ID; then
+    putz "<b>$spell</> <fade>(default)</>"
+    list_spell_actions $H_ID
+
+    if has_other_spells; then
+      puts ""
+      puts "<fade> ---</>"
+      puts ""
+    else
+      puts ""
+    fi
+  fi
+
+  for file in $( find $H_SPELL_DIR | grep -E ".+\.sh" | sort ) ; do
+    local spell=${file#$H_SPELL_DIR/}
+    local spell=${spell%.sh}
+
+    if [[ $spell == $H_ID ]]; then
+      # If is default spell, don't print
+      continue
+    fi
+
+    puts " $H_ID <b>$spell</>"
     list_spell_actions $spell
     puts ""
   done
@@ -101,60 +116,56 @@ function show_man {
   local spell="$1"
   local action="$2"
 
-  local has_action_documentation=false
-  local has_spell_documentation=false
-  local errmsg=""
-
   if existing_action $spell $action; then
     local man="$(get_action_documentation $spell $action)"
 
     if [[ -z "$man" ]]; then
-      errmsg="Action <b>$action</> does not have documentation"
+      error "Action <b>$action</> does not have documentation"
     else
-      has_action_documentation=true
       echo -e "$man\n"
     fi
   fi
 
-  if [[ $action == "default" ]]; then
+  exit 0
+}
 
-    file="$(spell_file_path $spell)"
+function show_spell_manual {
+  local spell="$1"
 
-    if [[ $has_action_documentation == "false" ]]; then
-      # show header comment
-      local lastcontent=""
-      local line_printed=false
-      # print the head comment
-      while read line; do
-        if [[ $line =~ \#\!.* ]]; then
-          continue;
-        elif [[ $line =~ \#.* ]]; then
-          line_printed=true
-          has_spell_documentation=true
-          lastcontent="$(echo $line | manfmt | xargs)"
-          echo "$line" | manfmt
-        else
-          break
-        fi
-      done <<<$( cat $file )
+  file="$(spell_file_path $spell)"
 
-      if [[ "$lastcontent" != "" ]] || [[ $line_printed != "true" ]]; then
-        echo ""
-      fi
+  # show header comment
+  local lastcontent=""
+  local line_printed=false
+
+  # print the head comment
+  while read line; do
+    if [[ $line =~ \#\!.* ]]; then
+      continue;
+    elif [[ $line =~ \#.* ]]; then
+      line_printed=true
+      has_spell_documentation=true
+      lastcontent="$(echo $line | manfmt | xargs)"
+      echo "$line" | manfmt
+    else
+      break
     fi
+  done <<<$( cat $file )
 
-    if [[ $has_spell_documentation == "true" ]] || [[ $has_action_documentation == "true" ]]; then
-      fade " ---\n"
-    fi
-
-    # list all actions
-    puts " <b>ALL ACTIONS</> <fade>from</> <bfade>$spell</> <fade>spell</>"
-
-    list_spell_actions $spell
-
+  if [[ "$lastcontent" != "" ]] || [[ $line_printed != "true" ]]; then
     echo ""
   fi
 
+  if [[ $line_printed == "true" ]]; then
+    fade " ---\n"
+  fi
+
+  # list all actions
+  puts " <b>ALL ACTIONS</> from <b>$spell</> spell"
+
+  list_spell_actions $spell
+
+  echo ""
   exit 0
 }
 
@@ -180,4 +191,17 @@ function list_spell_actions {
       fi
     fi
   done
+}
+
+function show_spell_actions {
+  local spell="$1"
+
+  echo ""
+
+  puts " <b>ALL ACTIONS</> from <b>$spell</> spell"
+
+  list_spell_actions $spell
+
+  echo ""
+  exit 0
 }
