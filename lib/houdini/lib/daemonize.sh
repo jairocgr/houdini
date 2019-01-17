@@ -68,7 +68,7 @@ function daemonizer {
       daemon_rm ${@:2}
       ;;
 
-    kill|stop)
+    kill)
       daemon_kill ${@:2}
       ;;
 

@@ -4,7 +4,7 @@ function is_a_help_call {
   if [[ ${#BASH_ARGV[@]} -gt 0 ]]; then
     for arg in "${BASH_ARGV[@]}"
     do
-      if [[ $arg = "--man" ]] ; then
+      if [[ $arg = "--help" ]] ; then
         return 0
       fi
     done
@@ -20,8 +20,8 @@ function manfmt {
     | sed -E 's/<\/b>/\\033[0m/g' \
     | sed -E 's/<b>/\\033[1m/g' \
     | sed -r 's/<fade>/\\e[90m/g' \
-    | sed -E 's/\*(.+)\*/\\033[1m\1\\033[0m/g' \
-    | sed -E 's/`(.+)`/\\033[1m\1\\033[0m/g' \
+    | sed -E 's/\*([^\*]+)\*/\\033[1m\1\\033[0m/g' \
+    | sed -E 's/`([^`]+)`/\\033[1m\1\\033[0m/g' \
     | sed -E 's/\#(.*)/\1/g' \
     | sed -E 's/^(\s*([A-Z0-9 \(\)]+)\s*)$/\\033[1m\1\\033[0m/g' \
   )"
@@ -79,20 +79,11 @@ function has_other_spells {
   return 1
 }
 
-function show_list_all {
+function print_all_spells {
   puts ""
 
   if existing_spell $H_ID; then
     putz "<b>$spell</> <fade>(default)</>"
-    list_spell_actions $H_ID
-
-    if has_other_spells; then
-      puts ""
-      puts "<fade> ---</>"
-      puts ""
-    else
-      puts ""
-    fi
   fi
 
   for file in $( find $H_SPELL_DIR | grep -E ".+\.sh" | sort ) ; do
@@ -104,14 +95,13 @@ function show_list_all {
       continue
     fi
 
-    puts " $H_ID <b>$spell</>"
-    list_spell_actions $spell
-    puts ""
+    putz "$H_ID <b>$spell</>"
   done
+  putz ""
   exit 0
 }
 
-function show_man {
+function print_action_man {
 
   local spell="$1"
   local action="$2"
@@ -129,7 +119,7 @@ function show_man {
   exit 0
 }
 
-function show_spell_manual {
+function print_spell_man {
   local spell="$1"
 
   file="$(spell_file_path $spell)"
@@ -152,25 +142,23 @@ function show_spell_manual {
     fi
   done <<<$( cat $file )
 
+  # if [[ $line_printed == "false" ]]; then
+  #   error "Spell <b>$spell</> does not have documentation"
+  # fi
+
   if [[ "$lastcontent" != "" ]] || [[ $line_printed != "true" ]]; then
     echo ""
   fi
 
-  if [[ $line_printed == "true" ]]; then
-    fade " ---\n"
-  fi
-
-  # list all actions
-  puts " <b>ALL ACTIONS</> from <b>$spell</> spell"
-
-  list_spell_actions $spell
-
-  echo ""
-  exit 0
 }
 
-function list_spell_actions {
+function print_spell_actions {
   local spell="$1"
+
+  print_spell_man $spell
+
+  putz "<b>ALL ACTIONS</> from <b>$spell</> spell"
+
   local file=$(spell_file_path $spell)
   local regex="$(action_name_regex $spell)"
 
@@ -191,16 +179,6 @@ function list_spell_actions {
       fi
     fi
   done
-}
-
-function show_spell_actions {
-  local spell="$1"
-
-  echo ""
-
-  puts " <b>ALL ACTIONS</> from <b>$spell</> spell"
-
-  list_spell_actions $spell
 
   echo ""
   exit 0

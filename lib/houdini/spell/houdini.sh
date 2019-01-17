@@ -18,14 +18,14 @@
 #
 # RegExr was created by gskinner.com, and is proudly hosted by Media Temple.
 #
-function test {
+function __test {
   puts "test loopback \"${@:-<ZERO_ARGS}\""
 }
 
 #
 # Lorem ipsum dolor sit amet, consectetur
 #
-function ps {
+function __ps {
   puts "list all mgr pocesses <b>database.production-link.com</>"
 }
 

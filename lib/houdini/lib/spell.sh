@@ -38,24 +38,11 @@ function add2path {
 
   sudo chmod +x $H_BIN
   sudo chmod +x /usr/bin/$H_ID
+
+  # setup_autocomplete
 }
 
 function cast {
-
-  if [[ "${1:-}" == "d" ]] || [[ "${1:-}" == "daemon" ]] || [[ "${1:-}" == "daemons" ]]; then
-    daemonizer ${@:2}
-    return $?
-  fi
-
-  if [[ "${1:-}" == "add2path" ]]; then
-    add2path
-    return $?
-  fi
-
-  if [[ "${1:-}" == "list_all" ]]; then
-    show_list_all
-    return $?
-  fi
 
   local DEFAULT_SPELL="$H_ID"
   local DEFAULT_ACTION="default"
@@ -76,31 +63,39 @@ function cast {
     fi
   done
 
-  errmsg=""
-  spell=""
-  action=""
+  local errmsg=""
+  local spell=""
+  local action=""
+  local candidate_action=""
 
   if [[ "$founded_spell" != "" ]]; then
     spell="$founded_spell"
 
     canditate_index="$(( $founded_index + 1 ))"
-    candidate="${!canditate_index:-}"
+    candidate_action="${!canditate_index:-}"
 
-    if [[ "$candidate" != "" ]]; then
-      if existing_action $spell $candidate; then
-        action="$candidate"
+    if [[ "$candidate_action" != "" ]]; then
+      if existing_action $spell $candidate_action; then
+        action="$candidate_action"
         args_index="$(( $founded_index + 1 ))"
         args="${args[@]:$args_index}"
-      elif [[ $candidate == "manual" ]]; then
-        show_spell_manual $spell
-      elif [[ $candidate == "actions" ]]; then
-        show_spell_actions $spell
+      elif [[ $candidate_action == "help" ]]; then
+        print_spell_actions $spell
+      elif [[ $candidate_action == "list" ]]; then
+        if [[ $spell == $H_ID ]]; then
+          print_all_spells
+        else
+          print_spell_actions $spell
+        fi
+      elif [[ $candidate_action == "add2path" ]]; then
+        add2path
+        return $?
       elif existing_action $spell $DEFAULT_ACTION; then
         action="$DEFAULT_ACTION"
         args_index="$(( $founded_index ))"
         args="${args[@]:$args_index}"
       else
-        errmsg="Action <b>$candidate</> not found on spell <b>$spell</>"
+        errmsg="Action <b>$candidate_action</> not found on spell <b>$spell</>"
       fi
     else
       if existing_action $spell $DEFAULT_ACTION; then
@@ -120,10 +115,13 @@ function cast {
         if existing_action $spell $candidate_action; then
           action="$candidate_action"
           args="${args[@]:1}"
-        elif [[ $candidate_action == "manual" ]]; then
-          show_spell_manual $spell
-        elif [[ $candidate_action == "actions" ]]; then
-          show_list_all
+        elif [[ $candidate_action == "help" ]]; then
+          print_spell_actions $spell
+        elif [[ $candidate_action == "add2path" ]]; then
+          add2path
+          return $?
+        elif [[ $candidate_action == "list" ]]; then
+          print_all_spells
         elif existing_action $spell $DEFAULT_ACTION; then
           action="$DEFAULT_ACTION"
           args="${args[@]:0}"
@@ -138,13 +136,14 @@ function cast {
           errmsg="Action <b>$DEFAULT_ACTION</> not found on default <b>$spell</> spell"
         fi
       fi
-    elif [[ ${args[0]:-} == "manual" ]]; then
-      show_list_all
-    elif [[ ${args[0]:-} == "actions" ]]; then
-      show_list_all
     else # does not have defaul spell
       if [[ -z "${args[0]:-}" ]]; then
         errmsg="Default spell <b>$DEFAULT_SPELL</> not found"
+      elif [[ "${args[0]:-}" == "list" ]]; then
+        print_all_spells
+      elif [[ "${args[0]:-}" == "add2path" ]]; then
+        add2path
+        return $?
       else
         errmsg="Spell <b>${args[0]}</> not found"
       fi
@@ -159,7 +158,7 @@ function cast {
   if is_a_help_call; then
     spell="${spell:-$DEFAULT_SPELL}"
     action="${action:-$DEFAULT_ACTION}"
-    show_man $spell $action
+    print_action_man $spell $action
   fi
 
   if is_daemonize_call ${@}; then
