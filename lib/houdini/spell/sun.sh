@@ -34,6 +34,9 @@ function __ps {
   putz ""
 }
 
+#
+# Não sei oq faz
+#
 function ptable {
   cast sun ps
   cast sun dump list

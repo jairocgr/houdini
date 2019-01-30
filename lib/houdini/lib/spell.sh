@@ -38,8 +38,6 @@ function add2path {
 
   sudo chmod +x $H_BIN
   sudo chmod +x /usr/bin/$H_ID
-
-  # setup_autocomplete
 }
 
 function cast {
@@ -79,16 +77,19 @@ function cast {
         action="$candidate_action"
         args_index="$(( $founded_index + 1 ))"
         args="${args[@]:$args_index}"
-      elif [[ $candidate_action == "help" ]]; then
+      elif [[ $candidate_action == "/help" ]]; then
         print_spell_actions $spell
-      elif [[ $candidate_action == "list" ]]; then
+      elif [[ $candidate_action == "/manual" ]]; then
         if [[ $spell == $H_ID ]]; then
-          print_all_spells
+          print_manual
         else
           print_spell_actions $spell
         fi
       elif [[ $candidate_action == "add2path" ]]; then
         add2path
+        return $?
+      elif [[ $candidate_action == "autocomplete" ]]; then
+        setup_autocomplete
         return $?
       elif existing_action $spell $DEFAULT_ACTION; then
         action="$DEFAULT_ACTION"
@@ -115,13 +116,16 @@ function cast {
         if existing_action $spell $candidate_action; then
           action="$candidate_action"
           args="${args[@]:1}"
-        elif [[ $candidate_action == "help" ]]; then
+        elif [[ $candidate_action == "/help" ]]; then
           print_spell_actions $spell
         elif [[ $candidate_action == "add2path" ]]; then
           add2path
           return $?
-        elif [[ $candidate_action == "list" ]]; then
-          print_all_spells
+        elif [[ $candidate_action == "autocomplete" ]]; then
+          setup_autocomplete
+          return $?
+        elif [[ $candidate_action == "/manual" ]]; then
+          print_manual
         elif existing_action $spell $DEFAULT_ACTION; then
           action="$DEFAULT_ACTION"
           args="${args[@]:0}"
@@ -139,10 +143,13 @@ function cast {
     else # does not have defaul spell
       if [[ -z "${args[0]:-}" ]]; then
         errmsg="Default spell <b>$DEFAULT_SPELL</> not found"
-      elif [[ "${args[0]:-}" == "list" ]]; then
-        print_all_spells
+      elif [[ "${args[0]:-}" == "/manual" ]]; then
+        print_manual
       elif [[ "${args[0]:-}" == "add2path" ]]; then
         add2path
+        return $?
+      elif [[ "${args[0]:-}" == "autocomplete" ]]; then
+        setup_autocomplete
         return $?
       else
         errmsg="Spell <b>${args[0]}</> not found"

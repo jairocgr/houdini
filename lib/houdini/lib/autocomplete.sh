@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 function _list_all_commands {
+  echo "/manual"
+  echo "add2path"
+  echo "autocomplete"
+
   for file in $( find $H_SPELL_DIR | grep -E ".+\.sh" | sort ) ; do
     local spell=${file#$H_SPELL_DIR/}
     local spell=${spell%.sh}
@@ -34,20 +38,10 @@ function _print_spell_actions {
     fi
   done
 
-  if [[ $spell == $H_ID ]]; then
-    if [[ -z "$prefix" ]]; then
-      echo "list"
-      echo "add2path"
-    else
-      echo "$prefix list"
-      echo "$prefix add2path"
-    fi
-  fi
-
   if [[ -z "$prefix" ]]; then
-    echo "help"
+    echo "/help"
   else
-    echo "$prefix help"
+    echo "$prefix /help"
   fi
 }
 
@@ -60,7 +54,7 @@ function setup_autocomplete {
   sudo bash -c "cat - >/etc/bash_completion.d/$H_ID" <<EOM
 #/usr/bin/env bash
 
-function ___auto_complete {
+function ___auto_complete_$H_ID {
   local possible=""
   read -r -d '' possible <<EOF
 $(_list_all_commands)
@@ -97,6 +91,6 @@ EOF
 
 }
 
-complete -o default -F ___auto_complete $H_ID
+complete -o default -F ___auto_complete_$H_ID $H_ID
 EOM
 }

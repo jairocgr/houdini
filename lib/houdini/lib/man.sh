@@ -4,7 +4,7 @@ function is_a_help_call {
   if [[ ${#BASH_ARGV[@]} -gt 0 ]]; then
     for arg in "${BASH_ARGV[@]}"
     do
-      if [[ $arg = "--help" ]] ; then
+      if [[ $arg = "/help" ]] ; then
         return 0
       fi
     done
@@ -79,11 +79,17 @@ function has_other_spells {
   return 1
 }
 
-function print_all_spells {
-  puts ""
-
+function print_manual {
+  putz ""
+  putz "Ferramenta <b>$H_ID</> de linha de comando"
+  putz ""
+  putz "<b>USAGE</>"
+  putz " $ $H_ID <spell> <action> params..."
+  putz ""
+  putz "<b>SPELLS DISPONÍVEIS</>"
+  putz ""
   if existing_spell $H_ID; then
-    putz "<b>$spell</> <fade>(default)</>"
+    putz " <b>$spell</> <fade>(default)</>"
   fi
 
   for file in $( find $H_SPELL_DIR | grep -E ".+\.sh" | sort ) ; do
@@ -95,8 +101,11 @@ function print_all_spells {
       continue
     fi
 
-    putz "$H_ID <b>$spell</>"
+    putz " $H_ID <b>$spell</>"
   done
+  putz ""
+  putz "<b>AJUDA</>"
+  putz " $ $H_ID <spell> /help"
   putz ""
   exit 0
 }
@@ -157,7 +166,7 @@ function print_spell_actions {
 
   print_spell_man $spell
 
-  putz "<b>ALL ACTIONS</> from <b>$spell</> spell"
+  putz "<b>ACTIONS</> do spell <b>$spell</>"
 
   local file=$(spell_file_path $spell)
   local regex="$(action_name_regex $spell)"
@@ -179,6 +188,12 @@ function print_spell_actions {
       fi
     fi
   done
+
+
+  putz ""
+  putz "<b>AJUDA</>"
+  putz " $ $H_ID $spell <action> /help"
+  putz ""
 
   echo ""
   exit 0
